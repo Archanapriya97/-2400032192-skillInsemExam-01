@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Student Performance Analytics — Demo</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#6ee7b7;--muted:#9aa4b2;--glass:rgba(255,255,255,0.03)}
+    *{box-sizing:border-box;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{margin:0;background:linear-gradient(180deg,#071024 0%, #071a2a 60%);color:#e6eef6;min-height:100vh}
+    .wrap{max-width:1100px;margin:28px auto;padding:20px}
+    .brand{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+    .logo{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,#0ea5a2,#7c3aed);display:flex;align-items:center;justify-content:center;font-weight:700}
+    h1{font-size:18px;margin:0}
+
+    /* Card */
+    .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 8px 30px rgba(2,6,23,0.6);}
+
+    /* Sign In */
+    .signin{display:grid;grid-template-columns:1fr 340px;gap:18px;margin-bottom:18px}
+    .panel{padding:18px}
+    .form-row{margin-bottom:12px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input[type=text],input[type=password],select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit}
+    .btn{padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,#10b981,#06b6d4);border:none;color:#001011;font-weight:700;cursor:pointer}
+    .muted{color:var(--muted);font-size:13px}
+
+    /* Dashboard layout */
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:16px}
+    .col-4{grid-column:span 4}
+    .col-8{grid-column:span 8}
+    .row{display:flex;gap:12px;align-items:center}
+    .kpi{display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);}
+    .kpi h3{margin:0;font-size:13px;color:var(--muted)}
+    .kpi .big{font-size:22px;font-weight:700}
+
+    /* progress */
+    .prog{height:10px;border-radius:999px;background:rgba(255,255,255,0.04);overflow:hidden}
+    .prog > i{display:block;height:100%;background:linear-gradient(90deg,#34d399,#06b6d4)}
+
+    /* subject list */
+    .subject-list{display:grid;gap:8px}
+    .subject{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.02)}
+
+    /* mini chart */
+    .bar-wrap{display:flex;gap:8px;align-items:flex-end;height:70px;padding:10px}
+    .bar{width:18px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,#7c3aed,#06b6d4);display:flex;align-items:flex-end;justify-content:center;color:#001;margin-bottom:0}
+
+    footer{margin-top:20px;color:var(--muted);font-size:13px;text-align:center}
+
+    @media (max-width:900px){.signin{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.col-4,.col-8{grid-column:span 1}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo">SP</div>
+      <div>
+        <h1>Student Performance Analytics (Demo)</h1>
+        <div class="muted">Sign in as Student or Teacher to view a mock dashboard</div>
+      </div>
+    </div>
+
+    <div class="signin card">
+      <div class="panel">
+        <div style="margin-bottom:10px"><strong>Quick demo accounts</strong>: <span class="muted">student@demo / 1234 | teacher@demo / 1234</span></div>
+        <div class="form-row">
+          <label for="role">Sign in as</label>
+          <select id="role"><option value="student">Student</option><option value="teacher">Teacher</option></select>
+        </div>
+        <div class="form-row">
+          <label for="email">Email address</label>
+          <input id="email" type="text" placeholder="you@example.com" value="student@demo" />
+        </div>
+        <div class="form-row">
+          <label for="pwd">Password</label>
+          <input id="pwd" type="password" placeholder="password" value="1234" />
+        </div>
+        <div class="form-row row">
+          <button class="btn" id="signin">Sign in</button>
+          <button class="btn" id="demo" style="background:linear-gradient(90deg,#60a5fa,#7c3aed)">Load demo</button>
+        </div>
+        <div class="muted" style="margin-top:6px">This prototype uses mock data and runs entirely in your browser.</div>
+      </div>
+
+      <div class="panel" style="border-left:1px solid rgba(255,255,255,0.02)">
+        <h3 style="margin-top:0">Preview</h3>
+        <div class="subject-list">
+          <div class="subject"><div><strong>Overall CGPA</strong><div class="muted">Cumulative grade point</div></div><div class="big" id="preview-cgpa">8.4</div></div>
+          <div class="subject"><div><strong>Best Subject</strong><div class="muted">Top performing</div></div><div id="preview-best">Mathematics</div></div>
+          <div class="subject"><div><strong>Improvement Area</strong><div class="muted">Work on</div></div><div id="preview-imp">Science</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard container (hidden until sign in) -->
+    <div id="dashboard" style="display:none">
+      <div class="card" id="dash-top" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <div>
+          <h2 id="dash-title">Student Dashboard</h2>
+          <div class="muted" id="dash-sub">Overview • Last updated just now</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn" id="signout" style="background:linear-gradient(90deg,#ef4444,#f97316)">Sign out</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="col-4">
+          <div class="kpi card">
+            <h3>Student</h3>
+            <div class="big" id="student-name">—</div>
+            <div class="muted" id="student-std">Standard</div>
+          </div>
+          <div style="height:12px"></div>
+          <div class="kpi card">
+            <h3>Overall CGPA</h3>
+            <div class="big" id="student-cgpa">—</div>
+            <div class="muted">Progress</div>
+            <div class="prog" style="margin-top:8px"><i id="cgpa-bar" style="width:40%"></i></div>
+          </div>
+
+          <div style="height:12px"></div>
+          <div class="card">
+            <h3 style="margin-top:0">Best Subject</h3>
+            <div id="best-sub" style="font-weight:700;font-size:16px">—</div>
+            <div class="muted">Topic strengths and suggestions</div>
+          </div>
+        </div>
+
+        <div class="col-8">
+          <div class="card">
+            <h3 style="margin-top:0">Subject performance overview</h3>
+            <div class="bar-wrap" id="subject-bars"></div>
+            <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap" id="subject-legend"></div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="card">
+            <h3 style="margin-top:0">Improvement areas</h3>
+            <div id="improve-list"></div>
+          </div>
+        </div>
+
+        <!-- Teacher extras -->
+        <div class="col-4" id="teacher-side" style="display:none">
+          <div class="card">
+            <h3>Total students</h3>
+            <div class="big" id="total-students">—</div>
+            <div class="muted">Active this term</div>
+          </div>
+          <div style="height:12px"></div>
+          <div class="card">
+            <h3>Avg CGPA</h3>
+            <div class="big" id="avg-cgpa">—</div>
+            <div class="muted">Class average</div>
+            <div class="prog" style="margin-top:8px"><i id="avg-bar" style="width:40%"></i></div>
+          </div>
+        </div>
+
+        <div class="col-8" id="teacher-main" style="display:none">
+          <div class="card">
+            <h3 style="margin-top:0">Subjects performance (class)</h3>
+            <div class="bar-wrap" id="class-bars"></div>
+            <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap" id="class-legend"></div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="card">
+            <h3 style="margin-top:0">Student list</h3>
+            <div id="student-list"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <footer>&copy; Demo — Student Performance Analytics. This is a static prototype.</footer>
+    </div>
+
+  </div>
+
+  <script>
+    // Mock data
+    const mockStudent = {
+      email: 'student@demo', name: 'Anita Kumar', standard: '10th Grade', cgpa: 8.4,
+      subjects: [{name:'Mathematics',score:92},{name:'English',score:78},{name:'Science',score:68},{name:'History',score:73},{name:'Computer',score:88}]
+    };
+
+    const mockTeacher = {
+      email:'teacher@demo', name:'Mr. Rao', class:'10th Grade', students:[
+        {name:'Anita Kumar',cgpa:8.4,s:{Math:92,Eng:78,Sci:68,Hist:73,Comp:88}},
+        {name:'Rohit Sharma',cgpa:7.6,s:{Math:72,Eng:82,Abi:70,Hist:64,Comp:78}},
+        {name:'Sana Malik',cgpa:9.1,s:{Math:95,Eng:88,Sci:86,Hist:92,Comp:95}},
+        {name:'Karan Joy',cgpa:6.9,s:{Math:58,Eng:64,Sci:59,Hist:60,Comp:72}}
+      ]
+    };
+
+    function byId(id){return document.getElementById(id)}
+
+    function showStudentDash(student){
+      byId('dash-title').innerText = 'Student Dashboard';
+      byId('dash-sub').innerText = student.standard + ' • Overview';
+      byId('student-name').innerText = student.name;
+      byId('student-std').innerText = student.standard;
+      byId('student-cgpa').innerText = student.cgpa.toFixed(2);
+      byId('cgpa-bar').style.width = Math.min(100, student.cgpa / 10 * 100) + '%';
+      byId('best-sub').innerText = student.subjects.reduce((a,b)=>a.score>b.score?a:b).name;
+
+      // subject bars
+      const container = byId('subject-bars'); container.innerHTML='';
+      const legend = byId('subject-legend'); legend.innerHTML='';
+      student.subjects.forEach(s=>{
+        const bar = document.createElement('div');
+        bar.className='bar';
+        bar.style.height = Math.max(8, (s.score/100)*70) + 'px';
+        bar.title = s.name + ': ' + s.score;
+        bar.innerHTML = '<small style="font-size:11px;color:rgba(255,255,255,0.9);padding-bottom:6px">'+Math.round(s.score)+'</small>';
+        container.appendChild(bar);
+
+        const pill = document.createElement('div'); pill.className='subject'; pill.style.padding='8px';
+        pill.innerHTML = '<div style="font-weight:700">'+s.name+'</div><div class="muted" style="font-size:12px">Score: '+s.score+'</div>';
+        legend.appendChild(pill);
+      });
+
+      // improvements
+      const imp = byId('improve-list'); imp.innerHTML = '';
+      const low = student.subjects.filter(s=>s.score<75).sort((a,b)=>a.score-b.score);
+      if(low.length===0) imp.innerHTML = '<div class="muted">No immediate improvement areas. Keep it up!</div>';
+      else{
+        low.forEach(s=>{
+          const d = document.createElement('div'); d.className='subject'; d.innerHTML = '<div><strong>'+s.name+'</strong><div class="muted">Current: '+s.score+' — Suggested: focus on fundamentals & practice</div></div><div style="width:120px"><div class="prog"><i style="width:'+(s.score)+'%"></i></div></div>';
+          imp.appendChild(d);
+        })
+      }
+
+      // hide teacher panes
+      byId('teacher-side').style.display='none';
+      byId('teacher-main').style.display='none';
+
+      // show student main
+      byId('dashboard').style.display='block';
+    }
+
+    function showTeacherDash(teacher){
+      byId('dash-title').innerText = 'Teacher Dashboard';
+      byId('dash-sub').innerText = teacher.class + ' • Summary';
+      byId('teacher-side').style.display='block';
+      byId('teacher-main').style.display='block';
+
+      byId('total-students').innerText = teacher.students.length;
+      const avg = teacher.students.reduce((s,x)=>s+x.cgpa,0)/teacher.students.length;
+      byId('avg-cgpa').innerText = avg.toFixed(2);
+      byId('avg-bar').style.width = Math.min(100, avg/10*100)+'%';
+
+      // class bars aggregated
+      const subjects = {};
+      teacher.students.forEach(st=>{
+        for(const [k,v] of Object.entries(st.s)){
+          if(!subjects[k]) subjects[k]=[];
+          subjects[k].push(v);
+        }
+      });
+      const classBars = byId('class-bars'); classBars.innerHTML='';
+      const classLegend = byId('class-legend'); classLegend.innerHTML='';
+      for(const [sub,arr] of Object.entries(subjects)){
+        const avgSub = Math.round(arr.reduce((a,b)=>a+b,0)/arr.length);
+        const bar = document.createElement('div'); bar.className='bar'; bar.style.height = Math.max(8, (avgSub/100)*70)+'px'; bar.title = sub+': '+avgSub; bar.innerHTML = '<small style="font-size:11px;color:rgba(255,255,255,0.9);padding-bottom:6px">'+avgSub+'</small>';
+        classBars.appendChild(bar);
+        const pill = document.createElement('div'); pill.className='subject'; pill.style.padding='8px'; pill.innerHTML = '<div style="font-weight:700">'+sub+'</div><div class="muted" style="font-size:12px">Avg: '+avgSub+'</div>';
+        classLegend.appendChild(pill);
+      }
+
+      // student list
+      const list = byId('student-list'); list.innerHTML='';
+      teacher.students.forEach(st=>{
+        const item = document.createElement('div'); item.className='subject'; item.style.justifyContent='space-between';
+        item.innerHTML = '<div><strong>'+st.name+'</strong><div class="muted">CGPA: '+st.cgpa+'</div></div><div><button class="btn" style="padding:6px 8px;background:linear-gradient(90deg,#06b6d4,#7c3aed)" onclick="previewStudent(\''+st.name.replace(/'/g,'\\\'')+'\')">View</button></div>';
+        list.appendChild(item);
+      });
+
+      // hide student specific fields
+      byId('student-name').innerText = teacher.name;
+      byId('student-std').innerText = teacher.class;
+      byId('dashboard').style.display='block';
+    }
+
+    function previewStudent(name){
+      const st = mockTeacher.students.find(s=>s.name===name);
+      if(!st) return;
+      // convert to format used by student view
+      const subjects = Object.entries(st.s).map(([k,v])=>({name:k,score:v}));
+      showStudentDash({name:st.name,standard:mockTeacher.class,cgpa:st.cgpa,subjects});
+    }
+
+    // Sign in logic (mock)
+    byId('signin').addEventListener('click',()=>{
+      const role = byId('role').value; const email = byId('email').value; const pwd = byId('pwd').value;
+      if(role==='student' && email===mockStudent.email && pwd==='1234') showStudentDash(mockStudent);
+      else if(role==='teacher' && email===mockTeacher.email && pwd==='1234') showTeacherDash(mockTeacher);
+      else alert('Invalid demo credentials — try the demo button.');
+
+      // update preview panel
+      byId('preview-cgpa').innerText = mockStudent.cgpa;
+      byId('preview-best').innerText = mockStudent.subjects.reduce((a,b)=>a.score>b.score?a:b).name;
+      byId('preview-imp').innerText = mockStudent.subjects.filter(s=>s.score<75).map(s=>s.name).join(', ')||'—';
+    });
+
+    byId('demo').addEventListener('click',()=>{
+      // toggle between student and teacher example
+      const r = byId('role').value;
+      if(r==='student') showStudentDash(mockStudent); else showTeacherDash(mockTeacher);
+    });
+
+    byId('signout').addEventListener('click',()=>{ byId('dashboard').style.display='none'; });
+
+    // small nicety: update preview on inputs
+    ['email','pwd','role'].forEach(id=>byId(id).addEventListener('input',()=>{
+      // keep preview matching student by default
+      byId('preview-cgpa').innerText = mockStudent.cgpa;
+      byId('preview-best').innerText = mockStudent.subjects.reduce((a,b)=>a.score>b.score?a:b).name;
+      byId('preview-imp').innerText = mockStudent.subjects.filter(s=>s.score<75).map(s=>s.name).join(', ')||'—';
+    }));
+
+    // init preview
+    document.addEventListener('DOMContentLoaded',()=>{
+      byId('preview-cgpa').innerText = mockStudent.cgpa;
+      byId('preview-best').innerText = mockStudent.subjects.reduce((a,b)=>a.score>b.score?a:b).name;
+      byId('preview-imp').innerText = mockStudent.subjects.filter(s=>s.score<75).map(s=>s.name).join(', ')||'—';
+    });
+  </script>
+</body>
+</html>"# fed.project" 
